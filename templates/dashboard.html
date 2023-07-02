@@ -27,6 +27,7 @@
         <thead>
           <tr>
             <th>#</th>
+            <th>timestamp</th>
             <th>Transaction</th>
             <th>Hash</th>
           </tr>
@@ -34,14 +35,16 @@
         <tfoot>
           <tr>
             <th>#</th>
+            <th>timestamp</th>
             <th>Transaction</th>
             <th>Hash</th>
           </tr>
         </tfoot>
         <tbody>
-          {% for block in blockchain %}
+          {% for block,timestamp in zip(blockchain,timelist) %}
             <tr>
               <td>{{block.number}}</td>
+              <td>{{timestamp}}</td>
               <td>{{block.data}}</td>
               <td>{{block.hash()}}</td>
             </tr>

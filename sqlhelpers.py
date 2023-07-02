@@ -1,6 +1,7 @@
 from app import mysql, session
 from blockchain import Block, Blockchain
-
+import time
+from datetime import datetime
 #custom exceptions for transaction errors
 class InvalidTransactionException(Exception): pass
 class InsufficientFundsException(Exception): pass
@@ -38,10 +39,11 @@ class Table():
     #get one value from the table based on a column's data
     #EXAMPLE using blockchain: ...getone("hash","00003f73gh93...")
     def getone(self, search, value):
-        data = {}; cur = mysql.connection.cursor()
+        data = dict(); cur = mysql.connection.cursor()
         result = cur.execute("SELECT * FROM %s WHERE %s = \"%s\"" %(self.table, search, value))
         if result > 0: data = cur.fetchone()
-        cur.close(); return data
+        cur.close(); 
+        return data
 
     #delete a value from the table based on column's data
     def deleteone(self, search, value):
@@ -93,7 +95,7 @@ def isnewtable(tableName):
 #check if user already exists
 def isnewuser(username):
     #access the users table and get all values from column "username"
-    users = Table("users", "name", "email", "username", "password")
+    users = Table("users", "name", "username", "email", "password")
     data = users.getall()
     usernames = [user.get('username') for user in data]
 
@@ -119,7 +121,7 @@ def send_money(sender, recipient, amount):
         raise InvalidTransactionException("User Does Not Exist.")
 
     #update the blockchain and sync to mysql
-    blockchain = get_blockchain()
+    blockchain = get_blockchain()[0]
     number = len(blockchain.chain) + 1
     data = "%s-->%s-->%s" %(sender, recipient, amount)
     blockchain.mine(Block(number, data=data))
@@ -128,7 +130,7 @@ def send_money(sender, recipient, amount):
 #get the balance of a user
 def get_balance(username):
     balance = 0.00
-    blockchain = get_blockchain()
+    blockchain = get_blockchain()[0]
 
     #loop through the blockchain and update balance
     for block in blockchain.chain:
@@ -142,16 +144,19 @@ def get_balance(username):
 #get the blockchain from mysql and convert to Blockchain object
 def get_blockchain():
     blockchain = Blockchain()
-    blockchain_sql = Table("blockchain", "number", "hash", "previous", "data", "nonce")
+    timelist=[]
+    blockchain_sql = Table("blockchain", "number", "hash", "previous", "data", "nonce","timestamp_column")
     for b in blockchain_sql.getall():
         blockchain.add(Block(int(b.get('number')), b.get('previous'), b.get('data'), int(b.get('nonce'))))
-
-    return blockchain
+        timelist.append(b.get('timestamp_column'))
+    return blockchain,timelist
 
 #update blockchain in mysql table
 def sync_blockchain(blockchain):
-    blockchain_sql = Table("blockchain", "number", "hash", "previous", "data", "nonce")
-    blockchain_sql.deleteall()
+    blockchain_sql = Table("blockchain", "number", "hash", "previous", "data", "nonce","timestamp_column")
+    #blockchain_sql.deleteall()
 
-    for block in blockchain.chain:
-        blockchain_sql.insert(str(block.number), block.hash(), block.previous_hash, block.data, block.nonce)
+    #for block in blockchain.chain:
+    #    blockchain_sql.insert(str(block.number), block.hash(), block.previous_hash, block.data, block.nonce)
+    block=blockchain.chain[-1]
+    blockchain_sql.insert(str(block.number), block.hash(), block.previous_hash, block.data, block.nonce,datetime.fromtimestamp(time.time()))

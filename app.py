@@ -20,8 +20,9 @@ app = Flask(__name__)
 #configure mysql
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = 'gerome'
+app.config['MYSQL_PASSWORD'] = '123'
 app.config['MYSQL_DB'] = 'crypto'
+app.config['MYSQL_UNIX_SOCKET'] = '/var/run/mysqld/mysqld.sock'  
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
 #initialize mysql
@@ -40,7 +41,7 @@ def is_logged_in(f):
 
 #log in the user by updating session
 def log_in_user(username):
-    users = Table("users", "name", "email", "username", "password")
+    users = Table("users", "name", "username", "email", "password")
     user = users.getone("username", username)
 
     session['logged_in'] = True
@@ -84,7 +85,7 @@ def login():
         candidate = request.form['password']
 
         #access users table to get the user's actual password
-        users = Table("users", "name", "email", "username", "password")
+        users = Table("users", "name", "username", "email", "password")
         user = users.getone("username", username)
         accPass = user.get('password')
 
@@ -145,6 +146,12 @@ def buy():
 
     return render_template('buy.html', balance=balance, form=form, page='buy')
 
+#Profil page
+@app.route("/profil", methods = ['GET', 'POST'])
+@is_logged_in
+def profil():
+    user = session.get('username')
+
 #logout the user. Ends current session
 @app.route("/logout")
 @is_logged_in
@@ -153,14 +160,16 @@ def logout():
     flash("Logout success", "success")
     return redirect(url_for('login'))
 
+
 #Dashboard page
 @app.route("/dashboard")
 @is_logged_in
 def dashboard():
     balance = get_balance(session.get('username'))
-    blockchain = get_blockchain().chain
+    blockchain,timelist = get_blockchain()[0].chain,get_blockchain()[1]
+
     ct = time.strftime("%I:%M %p")
-    return render_template('dashboard.html', balance=balance, session=session, ct=ct, blockchain=blockchain, page='dashboard')
+    return render_template('dashboard.html', balance=balance, session=session, ct=ct, blockchain=blockchain,timelist=timelist,zip=zip, page='dashboard')
 
 #Index page
 @app.route("/")
