@@ -1,4 +1,4 @@
-from wtforms import Form, StringField, DecimalField, IntegerField, TextAreaField, PasswordField, validators
+from wtforms import Form, StringField, DecimalField, IntegerField, TextAreaField, PasswordField, validators, DateField
 
 #form used on Register page
 class RegisterForm(Form):
@@ -9,10 +9,10 @@ class RegisterForm(Form):
     confirm = PasswordField('Confirm Password')
 
 #form used on the Transactions page
-class SendMoneyForm(Form):
-    username = StringField('Username', [validators.Length(min=4,max=25)])
-    amount = StringField('Amount', [validators.Length(min=1,max=50)])
+class ProfilForm(Form):
+    start = DateField('Start Date', format='%Y-%m-%d', validators=[validators.DataRequired()])
+    end = DateField('End Date', format='%Y-%m-%d', validators=[validators.DataRequired()])
 
 #form used on the Buy page
-class BuyForm(Form):
-    amount = StringField('Amount', [validators.Length(min=1,max=50)])
+class TransactForm(Form):
+    amount = StringField('consumption', [validators.Length(min=1,max=50)])

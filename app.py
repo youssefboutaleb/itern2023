@@ -6,7 +6,7 @@ from flask import Flask, render_template, flash, redirect, url_for, session, req
 from passlib.hash import sha256_crypt
 from flask_mysqldb import MySQL
 from functools import wraps
-
+from hashlib import sha256
 #import other functions and classes
 from sqlhelpers import *
 from forms import *
@@ -53,7 +53,7 @@ def log_in_user(username):
 @app.route("/register", methods = ['GET', 'POST'])
 def register():
     form = RegisterForm(request.form)
-    users = Table("users", "name", "email", "username", "password")
+    users = Table("users","address","name", "email", "username", "password")
 
     #if form is submitted
     if request.method == 'POST' and form.validate():
@@ -65,8 +65,9 @@ def register():
         #make sure user does not already exist
         if isnewuser(username):
             #add the user to mysql and log them in
+            address= sha256((username+form.password.data).encode("utf-8")).hexdigest()[:20]
             password = sha256_crypt.encrypt(form.password.data)
-            users.insert(name,email,username,password)
+            users.insert(address,name,email,username,password)
             log_in_user(username)
             return redirect(url_for('dashboard'))
         else:
@@ -108,49 +109,49 @@ def login():
     return render_template('login.html')
 
 #Transaction page
-@app.route("/transaction", methods = ['GET', 'POST'])
+@app.route("/Profil", methods = ['GET', 'POST'])
 @is_logged_in
-def transaction():
-    form = SendMoneyForm(request.form)
-    balance = get_balance(session.get('username'))
+def profil():
+    form = ProfilForm(request.form)
+    balance = get_consommation(session.get('username'))
 
     #if form is submitted
     if request.method == 'POST':
         try:
             #attempt to execute the transaction
-            send_money(session.get('username'), form.username.data, form.amount.data)
-            flash("Money Sent!", "success")
-        except Exception as e:
-            flash(str(e), 'danger')
-
-        return redirect(url_for('transaction'))
-
-    return render_template('transaction.html', balance=balance, form=form, page='transaction')
-
-#Buy page
-@app.route("/buy", methods = ['GET', 'POST'])
-@is_logged_in
-def buy():
-    form = BuyForm(request.form)
-    balance = get_balance(session.get('username'))
-
-    if request.method == 'POST':
-        #attempt to buy amount
-        try:
-            send_money("BANK", session.get('username'), form.amount.data)
-            flash("Purchase Successful!", "success")
+            update_profil(session.get('username'), form.start.data, form.end.data)
+            flash(" profile updated successfully !", "success")
         except Exception as e:
             flash(str(e), 'danger')
 
         return redirect(url_for('dashboard'))
 
-    return render_template('buy.html', balance=balance, form=form, page='buy')
+    return render_template('Profil.html', balance=balance, form=form, page='Profil')
 
-#Profil page
-@app.route("/profil", methods = ['GET', 'POST'])
+#Buy page
+@app.route("/Transact", methods = ['GET', 'POST'])
 @is_logged_in
-def profil():
-    user = session.get('username')
+def transact():
+    form = TransactForm(request.form)
+    users = Table("users","address","name", "email", "username", "password")
+    username=session.get('username')
+    user = users.getone("username", username)
+        
+    address =user.get('address') 
+    balance = get_consommation(username)
+
+    if request.method == 'POST':
+        #attempt to transact amount
+        try:
+            send_amount(username, address, form.amount.data)
+            flash("Transaction Successful!", "success")
+        except Exception as e:
+            flash(str(e), 'danger')
+
+        return redirect(url_for('dashboard'))
+
+    return render_template('Transact.html', balance=balance, form=form, page='Transact')
+
 
 #logout the user. Ends current session
 @app.route("/logout")
@@ -165,7 +166,7 @@ def logout():
 @app.route("/dashboard")
 @is_logged_in
 def dashboard():
-    balance = get_balance(session.get('username'))
+    balance = get_consommation(session.get('username'))
     blockchain,timelist = get_blockchain()[0].chain,get_blockchain()[1]
 
     ct = time.strftime("%I:%M %p")

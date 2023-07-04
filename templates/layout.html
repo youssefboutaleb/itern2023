@@ -65,15 +65,21 @@
             <span>Dashboard</span>
           </a>
         </li>
-        {% if page=='buy' %}<li class="nav-item active">{% else %}<li class="nav-item">{% endif %}
-          <a class="nav-link" href="buy">
+        {% if page=='Transact' %}<li class="nav-item active">{% else %}<li class="nav-item">{% endif %}
+          <a class="nav-link" href="Transact">
             <i class="fas fa-fw fa-chart-area"></i>
-            <span>Buy</span></a>
+            <span>Transact</span></a>
         </li>
         {% if page=='transaction' %}<li class="nav-item active">{% else %}<li class="nav-item">{% endif %}
-          <a class="nav-link" href="transaction">
+          <a class="nav-link" href="Profil">
             <i class="fas fa-fw fa-table"></i>
-            <span>Transaction</span></a>
+            <span>profil</span></a>
+
+       
+        {% if page=='anomaly' %}<li class="nav-item active">{% else %}<li class="nav-item">{% endif %}
+          <a class="nav-link" href="anomaly">
+            <i class="fas fa-fw fa-poll"></i>
+            <span>anomaly detection</span></a>
         </li>
       </ul>
 

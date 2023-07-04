@@ -102,44 +102,79 @@ def isnewuser(username):
     return False if username in usernames else True
 
 #send money from one user to another
-def send_money(sender, recipient, amount):
+def send_amount(username,address, amount):
     #verify that the amount is an integer or floating value
     try: amount = float(amount)
     except ValueError:
         raise InvalidTransactionException("Invalid Transaction.")
 
     #verify that the user has enough money to send (exception if it is the BANK)
-    if amount > get_balance(sender) and sender != "BANK":
-        raise InsufficientFundsException("Insufficient Funds.")
+    if  1000< amount < 0:
+        raise InsufficientFundsException("the amount should be in 0 , 1000")
 
     #verify that the user is not sending money to themselves or amount is less than or 0
-    elif sender == recipient or amount <= 0.00:
-        raise InvalidTransactionException("Invalid Transaction.")
+    #elif sender == recipient or amount <= 0.00:
+    #    raise InvalidTransactionException("Invalid Transaction.")
 
     #verify that the recipient exists
-    elif isnewuser(recipient):
+    elif isnewuser(username):
         raise InvalidTransactionException("User Does Not Exist.")
 
     #update the blockchain and sync to mysql
     blockchain = get_blockchain()[0]
     number = len(blockchain.chain) + 1
-    data = "%s-->%s-->%s" %(sender, recipient, amount)
+    data = "%s-->%s" %(address, amount)
+    blockchain.mine(Block(number, data=data))
+    sync_blockchain(blockchain)
+def update_profil(username,start,end):
+    #verify that the user exists
+    if isnewuser(username):
+        raise InvalidTransactionException("User Does Not Exist.")
+    users = Table("users","profil","address")
+    user = users.getone("username", username)
+    address =user.get('address') 
+    blockchain,timelist=get_blockchain()
+    chain=blockchain.chain
+    l=[]
+    for index,time in enumerate(timelist):
+        if start<time.date()<end:
+            datablock=chain[index].data.split('-->')
+            if datablock[0]==address:
+                l.append(float(datablock[1]))
+    if l !=[]:
+        mean_consommation= sum(l) / len(l)
+        if mean_consommation>50:
+            #sql_raw
+            cur = mysql.connection.cursor()
+            cur.execute("UPDATE users SET profil = 'high' WHERE username = %s", (username,))
+            mysql.connection.commit()
+            cur.close()
+
+
+        
+
+    #update the blockchain and sync to mysql
+    blockchain = get_blockchain()[0]
+    number = len(blockchain.chain) + 1
+    data = "%s-->%s" %(start, end)
     blockchain.mine(Block(number, data=data))
     sync_blockchain(blockchain)
 
 #get the balance of a user
-def get_balance(username):
-    balance = 0.00
+def get_consommation(username):
+    users = Table("users","address","name", "email", "username", "password")
+    user = users.getone("username", username)
+    address =user.get('address') 
+    consommation = 0.00
     blockchain = get_blockchain()[0]
 
     #loop through the blockchain and update balance
     for block in blockchain.chain:
         data = block.data.split("-->")
-        if username == data[0]:
-            balance -= float(data[2])
-        elif username == data[1]:
-            balance += float(data[2])
-    return balance
+        if address == data[0]:
+            consommation += float(data[1])
+        
+    return consommation
 
 #get the blockchain from mysql and convert to Blockchain object
 def get_blockchain():
