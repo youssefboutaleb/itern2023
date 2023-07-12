@@ -1,0 +1,24 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+{% include 'includes/_messages.html' %}
+<p>Your current consumption is {{ balance }} kWh</p>
+
+{% if l %}
+  <p>{{ l|length }} anomaly(s) detected:</p>
+  <ul>
+    {% for detection in l %}
+      <li>{{ detection }}</li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>No anomaly detected.</p>
+{% endif %}
+
+<form action="" method="POST">
+  <div>
+    <!-- Add your form fields here -->
+  </div>
+  <button type="submit" class="btn btn-primary btn-block">Detect Anomaly</button>
+</form>
+{% endblock %}

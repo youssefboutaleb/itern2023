@@ -108,7 +108,7 @@ def login():
 
     return render_template('login.html')
 
-#Transaction page
+#Profil page
 @app.route("/Profil", methods = ['GET', 'POST'])
 @is_logged_in
 def profil():
@@ -128,7 +128,7 @@ def profil():
 
     return render_template('Profil.html', balance=balance, form=form, page='Profil')
 
-#Buy page
+#Transaction page
 @app.route("/Transact", methods = ['GET', 'POST'])
 @is_logged_in
 def transact():
@@ -151,6 +151,30 @@ def transact():
         return redirect(url_for('dashboard'))
 
     return render_template('Transact.html', balance=balance, form=form, page='Transact')
+
+#anomaly page
+@app.route("/anomaly", methods = ['GET', 'POST'])
+@is_logged_in
+def anomaly():
+    users = Table("users","address","name", "email", "username", "password","profil")
+    username=session.get('username')
+    user = users.getone("username", username)
+    address =user.get('address')     
+    profil =user.get('profil') 
+    balance = get_consommation(username)
+    l=[]
+    if request.method == 'POST':
+        #attempt to transact amount
+        try:
+            l= anomaly_detection(address, profil)
+            flash("anomaly detection  Successful!", "success")
+        except Exception as e:
+            flash(str(e), 'danger')
+
+        #return redirect(url_for('dashboard'))
+
+    return render_template('anomaly.html', balance=balance, l=l, page='anomaly')
+
 
 
 #logout the user. Ends current session

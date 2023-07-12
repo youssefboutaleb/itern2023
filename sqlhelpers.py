@@ -126,6 +126,29 @@ def send_amount(username,address, amount):
     data = "%s-->%s" %(address, amount)
     blockchain.mine(Block(number, data=data))
     sync_blockchain(blockchain)
+def anomaly_detection(address, profil):
+    seuil=50
+    if profil=="high":
+        seuil *=10
+    elif profil=="low":
+        seuil *=0.1
+    #standard seuil is seuil=50
+    blockchain,timelist=get_blockchain()
+    chain=blockchain.chain
+    l=[]
+    for index,time in enumerate(timelist):
+        datablock=chain[index].data.split('-->')
+        if datablock[0]==address:
+            if float(datablock[1])>seuil:
+                l.append(time)
+    return l
+
+
+
+
+        
+
+
 def update_profil(username,start,end):
     #verify that the user exists
     if isnewuser(username):
@@ -144,23 +167,19 @@ def update_profil(username,start,end):
     if l !=[]:
         mean_consommation= sum(l) / len(l)
         if mean_consommation>50:
-            #sql_raw
+            #execution="UPDATE users SET profil = 'high' WHERE username = %s", (username,)
+            #sql_raw(execution)
+            
             cur = mysql.connection.cursor()
             cur.execute("UPDATE users SET profil = 'high' WHERE username = %s", (username,))
             mysql.connection.commit()
             cur.close()
-
+            
 
         
 
-    #update the blockchain and sync to mysql
-    blockchain = get_blockchain()[0]
-    number = len(blockchain.chain) + 1
-    data = "%s-->%s" %(start, end)
-    blockchain.mine(Block(number, data=data))
-    sync_blockchain(blockchain)
-
-#get the balance of a user
+    
+#get the consommation of a user
 def get_consommation(username):
     users = Table("users","address","name", "email", "username", "password")
     user = users.getone("username", username)
@@ -176,7 +195,7 @@ def get_consommation(username):
         
     return consommation
 
-#get the blockchain from mysql and convert to Blockchain object
+#get the blockchain from mysql and convert to Blockchain object with the timelisted information
 def get_blockchain():
     blockchain = Blockchain()
     timelist=[]
