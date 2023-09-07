@@ -26,7 +26,8 @@ from forms import *
 import time
 
 #initialize the app
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates')
+
 
 #configure mysql
 app.config['MYSQL_HOST'] = 'localhost'
@@ -335,4 +336,4 @@ def index():
 #Run app
 if __name__ == '__main__':
     app.secret_key = 'secret123'
-    app.run(debug = True)
+    app.run()
