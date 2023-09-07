@@ -8,9 +8,15 @@
   <p>{{ l|length }} anomaly(s) detected:</p>
   <ul>
     {% for detection in l %}
-      <li>{{ detection }}</li>
+      <li>{{ datetime.fromtimestamp(detection[0]) }} - Amount: {{ detection[1] }} kWh</li>
     {% endfor %}
   </ul>
+
+  <!-- Add the button to download the anomaly detection results as a .txt file -->
+  <form action="{{ url_for('download_anomaly_results') }}" method="POST">
+    <button type="submit" class="btn btn-primary btn-block">Download Anomaly Results</button>
+  </form>
+
 {% else %}
   <p>No anomaly detected.</p>
 {% endif %}

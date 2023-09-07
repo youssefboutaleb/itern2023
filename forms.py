@@ -1,4 +1,5 @@
 from wtforms import Form, StringField, DecimalField, IntegerField, TextAreaField, PasswordField, validators, DateField
+from flask_wtf.file import FileField, FileRequired, FileAllowed
 
 #form used on Register page
 class RegisterForm(Form):
@@ -16,3 +17,8 @@ class ProfilForm(Form):
 #form used on the Buy page
 class TransactForm(Form):
     amount = StringField('consumption', [validators.Length(min=1,max=50)])
+class MultiTransactForm(Form):
+    times = StringField('Timestamps (comma-separated)', [validators.Length(min=1, max=200)])
+    amounts = StringField('Amounts (comma-separated)', [validators.Length(min=1, max=200)])
+class TransactcsvForm(Form):
+    csv_file = FileField('CSV File', validators=[FileRequired(), FileAllowed(['csv'], 'CSV files only!')])

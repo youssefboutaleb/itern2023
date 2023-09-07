@@ -2,11 +2,22 @@
 # -*- coding: utf-8 -*-
 
 #import flask dependencies for web GUI
-from flask import Flask, render_template, flash, redirect, url_for, session, request, logging
+import os
+from flask import Flask, render_template, flash, redirect, url_for, session, request, logging ,jsonify
 from passlib.hash import sha256_crypt
 from flask_mysqldb import MySQL
 from functools import wraps
+from flask import send_file
 from hashlib import sha256
+# web3 libs
+from web3 import Web3
+from eth_account import Account
+from eth_utils import to_checksum_address
+import csv
+
+
+
+
 #import other functions and classes
 from sqlhelpers import *
 from forms import *
@@ -24,6 +35,11 @@ app.config['MYSQL_PASSWORD'] = '123'
 app.config['MYSQL_DB'] = 'crypto'
 app.config['MYSQL_UNIX_SOCKET'] = '/var/run/mysqld/mysqld.sock'  
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
+
+#Configure web3 provider
+web3_provider = Web3.HTTPProvider('HTTP://127.0.0.1:7545')
+web3 = Web3(web3_provider)
+
 
 #initialize mysql
 mysql = MySQL(app)
@@ -48,6 +64,7 @@ def log_in_user(username):
     session['username'] = username
     session['name'] = user.get('name')
     session['email'] = user.get('email')
+    session['address'] = user.get('address')  # Store Metamask address in session
 
 #Registration page
 @app.route("/register", methods = ['GET', 'POST'])
@@ -65,7 +82,9 @@ def register():
         #make sure user does not already exist
         if isnewuser(username):
             #add the user to mysql and log them in
-            address= sha256((username+form.password.data).encode("utf-8")).hexdigest()[:20]
+            account = Account.create()
+            #private_key = account.private_Key.hex()
+            address = to_checksum_address(account.address)
             password = sha256_crypt.encrypt(form.password.data)
             users.insert(address,name,email,username,password)
             log_in_user(username)
@@ -76,9 +95,15 @@ def register():
 
     return render_template('register.html', form=form)
 
+
+
+
+
+
 #Login page
 @app.route("/login", methods = ['GET', 'POST'])
 def login():
+
     #if form is submitted
     if request.method == 'POST':
         #collect form data
@@ -113,7 +138,7 @@ def login():
 @is_logged_in
 def profil():
     form = ProfilForm(request.form)
-    balance = get_consommation(session.get('username'))
+    balance = sum(get_consommation(session.get('username'))[1])
 
     #if form is submitted
     if request.method == 'POST':
@@ -138,12 +163,12 @@ def transact():
     user = users.getone("username", username)
         
     address =user.get('address') 
-    balance = get_consommation(username)
+    balance = sum(get_consommation(username)[1])
 
     if request.method == 'POST':
         #attempt to transact amount
         try:
-            send_amount(username, address, form.amount.data)
+            send_amount_contract(address, int(form.amount.data))
             flash("Transaction Successful!", "success")
         except Exception as e:
             flash(str(e), 'danger')
@@ -152,28 +177,129 @@ def transact():
 
     return render_template('Transact.html', balance=balance, form=form, page='Transact')
 
+@app.route("/MultipleTransact", methods=['GET', 'POST'])
+@is_logged_in
+def MultipleTransact():
+    form = MultiTransactForm(request.form)
+    users = Table("users", "address", "name", "email", "username", "password")
+    username = session.get('username')
+    user = users.getone("username", username)
+
+    address = user.get('address')
+    balance = sum(get_consommation(username)[1])
+
+    if request.method == 'POST':
+        # attempt to transact amounts from the CSV
+        try:
+            times = [int(time) for time in form.times.data.split(",")]
+            amounts = [int(amount) for amount in form.amounts.data.split(",")]
+
+            if len(times) != len(amounts):
+                raise ValueError("Timestamps and amounts must have the same number of elements.")
+
+            send_amounts_contract(address, times, amounts)
+            flash("Transactions Successful!", "success")
+        except Exception as e:
+            flash(str(e), 'danger')
+
+        return redirect(url_for('dashboard'))
+
+    return render_template('MultipleTransact.html', balance=balance, form=form, page='MultipleTransact')
+
+
+
+
+
+# New route to handle file upload and perform transactions
+@app.route("/Transact_CSV", methods=['GET', 'POST'])
+@is_logged_in
+def transact_csv():
+    print("Transact_CSV route called.")
+    form = TransactcsvForm(request.form)
+    users = Table("users", "address", "name", "email", "username", "password")
+    username = session.get('username')
+    user = users.getone("username", username)
+
+    address = user.get('address')
+    balance = sum(get_consommation(username)[1])
+
+    if request.method == 'POST' and form.validate():
+        csv_file = request.files['csv_file']  # Access the uploaded file from request.files
+        print("Received CSV file:", csv_file.filename)
+
+        # Read CSV data and perform transactions
+        try:
+            times = []
+            amounts = []
+
+            # Assuming the CSV file has columns 'times' and 'amounts'
+            with open(csv_file, 'r') as file:
+                csv_reader = csv.DictReader(file)
+                for row in csv_reader:
+                    times.append(int(row['times']))
+                    amounts.append(int(row['amounts']))
+
+            send_amounts_contract(address, times, amounts)
+            flash("Transactions Successful!", "success")
+        except Exception as e:
+            flash("Error reading CSV file or performing transactions: " + str(e), 'danger')
+
+        return redirect(url_for('dashboard'))
+
+    return render_template('Transact_CSV.html', balance=balance, form=form, page='Transact_CSV')
+
 #anomaly page
 @app.route("/anomaly", methods = ['GET', 'POST'])
 @is_logged_in
 def anomaly():
-    users = Table("users","address","name", "email", "username", "password","profil")
+    users = Table("users","address","name", "email", "username", "password")
     username=session.get('username')
     user = users.getone("username", username)
     address =user.get('address')     
-    profil =user.get('profil') 
-    balance = get_consommation(username)
+    
+    balance = sum(get_consommation(username)[1])
     l=[]
     if request.method == 'POST':
         #attempt to transact amount
         try:
-            l= anomaly_detection(address, profil)
+            l= anomaly_detection(address)
             flash("anomaly detection  Successful!", "success")
         except Exception as e:
             flash(str(e), 'danger')
 
         #return redirect(url_for('dashboard'))
 
-    return render_template('anomaly.html', balance=balance, l=l, page='anomaly')
+    return render_template('anomaly.html', balance=balance, l=l, page='anomaly',datetime=datetime)
+
+
+
+
+# Route for downloading anomaly detection results as a .txt file
+@app.route("/download_anomaly_results", methods=['POST'])
+@is_logged_in
+def download_anomaly_results():
+    users = Table("users", "address", "name", "email", "username", "password")
+    username = session.get('username')
+    user = users.getone("username", username)
+    address = user.get('address')
+    l = anomaly_detection(address)
+
+    if not l:
+        flash("No anomaly detected.", "danger")
+        return redirect(url_for('anomaly'))
+
+    # Create a .txt file with the anomaly detection results
+    filename = f"anomaly_results_{username}.txt"
+    file_path = os.path.join(app.root_path, filename)
+
+    with open(file_path, 'w') as file:
+        for detection in l:
+            file.write(f"{datetime.fromtimestamp(detection)}\n")
+
+    # Send the .txt file as a response for download
+    return send_file(file_path, as_attachment=True)
+
+
 
 
 
@@ -190,11 +316,15 @@ def logout():
 @app.route("/dashboard")
 @is_logged_in
 def dashboard():
-    balance = get_consommation(session.get('username'))
-    blockchain,timelist = get_blockchain()[0].chain,get_blockchain()[1]
+    times, amounts = get_consommation(session.get('username'))
+    
 
     ct = time.strftime("%I:%M %p")
-    return render_template('dashboard.html', balance=balance, session=session, ct=ct, blockchain=blockchain,timelist=timelist,zip=zip, page='dashboard')
+    if not web3.is_connected():
+        flash("Ethereum node is not connected", "danger")
+    else :
+        flash("Ethereum node is  connected", "success")
+    return render_template('dashboard.html', balance=sum(amounts), session=session, ct=ct, amounts=amounts,timelist=times,zip=zip, page='dashboard')
 
 #Index page
 @app.route("/")

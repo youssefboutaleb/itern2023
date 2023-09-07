@@ -1,15 +1,18 @@
+<!-- Transact_CSV.html -->
 {% extends 'layout.html' %}
 
 {% block body %}
 {% include 'includes/_messages.html' %}
 <p>Your current consumption is {{ balance }} kwh</p>
-{% from "includes/_formhelpers.html" import render_field %}
 <form action="" method="POST" enctype="multipart/form-data">
   <div class="form-group">
     <div class="form-label-group">
-      {{ render_field(form.csv_file, class_="form-control") }}
+      <input type="file" name="csv_file" class="form-control">
     </div>
   </div>
   <button type="submit" class="btn btn-primary btn-block">Transact</button>
 </form>
+
+<!-- Add an HTML canvas element to render the chart -->
+<canvas id="myChart" width="400" height="200"></canvas>
 {% endblock %}

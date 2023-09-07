@@ -2,14 +2,19 @@
 
 {% block body %}
 {% include 'includes/_messages.html' %}
-<p>Your current consumption is {{ balance }} kwh </p>
+<p>Your current consumption is {{ balance }} kwh</p>
 {% from "includes/_formhelpers.html" import render_field %}
 <form action="" method="POST">
   <div class="form-group">
     <div class="form-label-group">
-      {{render_field(form.amount, class_="form-control")}}
+      {{ render_field(form.times, class_="form-control", placeholder="Timestamps (comma-separated)") }}
     </div>
   </div>
-  <button type="submit" class="btn btn-primary btn-block"> Transact </button>
+  <div class="form-group">
+    <div class="form-label-group">
+      {{ render_field(form.amounts, class_="form-control", placeholder="Amounts (comma-separated)") }}
+    </div>
+  </div>
+  <button type="submit" class="btn btn-primary btn-block">Transact</button>
 </form>
 {% endblock %}

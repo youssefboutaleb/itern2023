@@ -74,7 +74,16 @@
           <a class="nav-link" href="Profil">
             <i class="fas fa-fw fa-table"></i>
             <span>profil</span></a>
-
+        </li>
+        {% if page=='MultipleTransact' %}<li class="nav-item active">{% else %}<li class="nav-item">{% endif %}
+          <a class="nav-link" href="MultipleTransact">
+            <i class="fas fa-fw fa-table"></i>
+            <span>MultipleTransact</span></a>
+       </li>
+        {% if page=='Transact_CSV' %}<li class="nav-item active">{% else %}<li class="nav-item">{% endif %}
+          <a class="nav-link" href="Transact_CSV">
+            <i class="fas fa-fw fa-table"></i>
+            <span>Transact_CSV</span></a>
        
         {% if page=='anomaly' %}<li class="nav-item active">{% else %}<li class="nav-item">{% endif %}
           <a class="nav-link" href="anomaly">

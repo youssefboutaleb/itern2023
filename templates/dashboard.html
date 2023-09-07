@@ -1,26 +1,28 @@
 {% extends 'layout.html' %}
 
 {% block body %}
-<h1>Welcome back, {{session.get('name')}}</h1>
+<h1>Welcome back, {{ session.get('name') }}</h1>
 {% include 'includes/_messages.html' %}
 <p></p>
 
-<p> Your current consommation is {{ balance }} KWH</p>
+<p>Your current consumption is {{ balance }} KWH</p>
 <div class="card mb-3">
   <div class="card-header">
     <i class="fas fa-chart-area"></i>
-    Price of KWH (DOLLAR)</div>
+    Price of KWH (DOLLAR)
+  </div>
   <div class="card-body">
     <canvas id="myAreaChart" width="100%" height="30"></canvas>
   </div>
-  <div class="card-footer small text-muted">Updated today at {{ct}}</div>
+  <div class="card-footer small text-muted">Updated today at {{ ct }}</div>
 </div>
 
 <!-- DataTables Example -->
 <div class="card mb-3">
   <div class="card-header">
     <i class="fas fa-table"></i>
-    Blockchain</div>
+    Consumptions
+  </div>
   <div class="card-body">
     <div class="table-responsive">
       <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
@@ -28,31 +30,28 @@
           <tr>
             <th>#</th>
             <th>timestamp</th>
-            <th>Transaction</th>
-            <th>Hash</th>
+            <th>amount</th>
           </tr>
         </thead>
         <tfoot>
           <tr>
             <th>#</th>
             <th>timestamp</th>
-            <th>Transaction</th>
-            <th>Hash</th>
+            <th>amount</th>
           </tr>
         </tfoot>
         <tbody>
-          {% for block,timestamp in zip(blockchain,timelist) %}
+          {% for amount, timestamp in zip(amounts, timelist) %}
             <tr>
-              <td>{{block.number}}</td>
-              <td>{{timestamp}}</td>
-              <td>{{block.data}}</td>
-              <td>{{block.hash()}}</td>
+              <td>{{ loop.index }}</td>
+              <td>{{ timestamp }}</td>
+              <td>{{ amount }}</td>
             </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
   </div>
-  <div class="card-footer small text-muted">Updated today at {{ct}}</div>
+  <div class="card-footer small text-muted">Updated today at {{ ct }}</div>
 </div>
 {% endblock %}

@@ -1,7 +1,23 @@
+import json
+import joblib
+import numpy as np
+
+from web3 import Web3
 from app import mysql, session
 from blockchain import Block, Blockchain
 import time
 from datetime import datetime
+
+
+web3_provider = Web3.HTTPProvider('HTTP://127.0.0.1:7545')
+web3 = Web3(web3_provider)
+contract_address = web3.to_checksum_address("0x21438DA416E0bE889DB8E8d22EF28134c54fC4e6")
+
+abi = json.loads('[{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"uint256","name":"","type":"uint256"}],"name":"consomations","outputs":[{"internalType":"uint256","name":"time","type":"uint256"},{"internalType":"uint256","name":"amount","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"}],"name":"getConsomation","outputs":[{"internalType":"uint256[]","name":"","type":"uint256[]"},{"internalType":"uint256[]","name":"","type":"uint256[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"userAddress","type":"address"}],"name":"getProfile","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"sendConsomation","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256[]","name":"times","type":"uint256[]"},{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"name":"sendConsomation_csv","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"userAddress","type":"address"},{"internalType":"string","name":"newProfile","type":"string"}],"name":"updateProfile","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"users","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"}]')
+contract = web3.eth.contract(address=contract_address, abi=abi)
+
+
+
 #custom exceptions for transaction errors
 class InvalidTransactionException(Exception): pass
 class InsufficientFundsException(Exception): pass
@@ -10,11 +26,11 @@ class InsufficientFundsException(Exception): pass
 class Table():
     #specify the table name and columns
     #EXAMPLE table:
-    #               blockchain
-    # number    hash    previous   data    nonce
+    #               users
+    # address  name      username email   password 
     # -data-   -data-    -data-   -data-  -data-
     #
-    #EXAMPLE initialization: ...Table("blockchain", "number", "hash", "previous", "data", "nonce")
+    #EXAMPLE initialization: ...Table("users", "address", "name", "username", "email", "password")
     def __init__(self, table_name, *args):
         self.table = table_name
         self.columns = "(%s)" %",".join(args)
@@ -37,7 +53,7 @@ class Table():
         data = cur.fetchall(); return data
 
     #get one value from the table based on a column's data
-    #EXAMPLE using blockchain: ...getone("hash","00003f73gh93...")
+    #EXAMPLE using users: ...getone("username","username_example...")
     def getone(self, search, value):
         data = dict(); cur = mysql.connection.cursor()
         result = cur.execute("SELECT * FROM %s WHERE %s = \"%s\"" %(self.table, search, value))
@@ -102,45 +118,74 @@ def isnewuser(username):
     return False if username in usernames else True
 
 #send money from one user to another
-def send_amount(username,address, amount):
-    #verify that the amount is an integer or floating value
-    try: amount = float(amount)
-    except ValueError:
-        raise InvalidTransactionException("Invalid Transaction.")
+def send_amount_contract(address,amount):
 
-    #verify that the user has enough money to send (exception if it is the BANK)
-    if  1000< amount < 0:
-        raise InsufficientFundsException("the amount should be in 0 , 1000")
+    # update the blockchain and sync to mysql
 
-    #verify that the user is not sending money to themselves or amount is less than or 0
-    #elif sender == recipient or amount <= 0.00:
-    #    raise InvalidTransactionException("Invalid Transaction.")
 
-    #verify that the recipient exists
-    elif isnewuser(username):
-        raise InvalidTransactionException("User Does Not Exist.")
+    # Specify the 'from' address for the transaction
+    web3.eth.default_account = address
+    # Build the transaction data
+    transaction = contract.functions.sendConsomation(amount).transact()
 
-    #update the blockchain and sync to mysql
-    blockchain = get_blockchain()[0]
-    number = len(blockchain.chain) + 1
-    data = "%s-->%s" %(address, amount)
-    blockchain.mine(Block(number, data=data))
-    sync_blockchain(blockchain)
-def anomaly_detection(address, profil):
-    seuil=50
+    # Sign and send the transaction
+    tx_receipt = web3.eth.wait_for_transaction_receipt(transaction)
+    Contract = web3.eth.contract(
+        address=tx_receipt.contractAddress,
+        abi=abi
+    )
+
+def send_amounts_contract(address, times, amounts):
+    # update the blockchain and sync to MySQL
+
+    # Specify the 'from' address for the transaction
+    web3.eth.default_account = address
+
+    # Build the transaction data
+    contract_function = contract.functions.sendConsomation_csv(times, amounts)
+    transaction = contract_function.transact()
+
+    # Sign and send the transaction
+    tx_receipt = web3.eth.wait_for_transaction_receipt(transaction)
+    Contract = web3.eth.contract(
+        address=tx_receipt.contractAddress,
+        abi=abi
+    )
+
+def anomaly_detection(address):
+    web3.eth.default_account = address
+
+    # Build the transaction data
+    contract_function = contract.functions.getProfile(address)
+    profil = contract_function.call()
+    contract_function =contract.functions.getConsomation(address)
+    times,amounts=contract_function.call()
+    #profil from 0 to 9
     if profil=="high":
-        seuil *=10
+        profil=7
     elif profil=="low":
-        seuil *=0.1
+        profil=2
+    else : profil =4
     #standard seuil is seuil=50
-    blockchain,timelist=get_blockchain()
-    chain=blockchain.chain
-    l=[]
-    for index,time in enumerate(timelist):
-        datablock=chain[index].data.split('-->')
-        if datablock[0]==address:
-            if float(datablock[1])>seuil:
-                l.append(time)
+
+    l = []
+    model = joblib.load('/home/youssef/Desktop/stage_ete/cryptocurrencypython/model/logistic_regression_model.pkl')
+    for time,amount in zip(times,amounts):
+        # Convert timestamp to a datetime object
+        dt_object = datetime.fromtimestamp(time)
+        # Extract the required features
+        hourofday = dt_object.hour
+        minuteofhour = dt_object.minute
+        dayofweek = dt_object.weekday()  # Monday: 0, Sunday: 6
+        dayofmonth = dt_object.day
+        monthofyear = dt_object.month
+        year = dt_object.year
+        dataEntry=[profil,amount/1000,hourofday,minuteofhour,dayofweek,dayofmonth,monthofyear,year-2021]
+        dataEntry=np.array([dataEntry])
+        prediction = model.predict(dataEntry)
+        if prediction==[1]:
+            l.append((time,amount))
+
     return l
 
 
@@ -153,27 +198,34 @@ def update_profil(username,start,end):
     #verify that the user exists
     if isnewuser(username):
         raise InvalidTransactionException("User Does Not Exist.")
-    users = Table("users","profil","address")
+    users = Table("users","address")
     user = users.getone("username", username)
-    address =user.get('address') 
-    blockchain,timelist=get_blockchain()
-    chain=blockchain.chain
-    l=[]
-    for index,time in enumerate(timelist):
-        if start<time.date()<end:
-            datablock=chain[index].data.split('-->')
-            if datablock[0]==address:
-                l.append(float(datablock[1]))
+    address =user.get('address')
+    web3.eth.default_account = address
+    l = []
+    times, amounts = contract.functions.getConsomation(address).call()
+
+    for i in range(len(times)):
+        time = datetime.fromtimestamp(times[i])
+        if start < time.date() < end:
+            l.append(amounts[i])
     if l !=[]:
         mean_consommation= sum(l) / len(l)
         if mean_consommation>50:
             #execution="UPDATE users SET profil = 'high' WHERE username = %s", (username,)
             #sql_raw(execution)
+
+            # Build the transaction data
+            transaction = contract.functions.updateProfile(address,"high").transact()
+
+            # Sign and send the transaction
+            tx_receipt = web3.eth.wait_for_transaction_receipt(transaction)
+            Contract = web3.eth.contract(
+                address=tx_receipt.contractAddress,
+                abi=abi
+            )
+
             
-            cur = mysql.connection.cursor()
-            cur.execute("UPDATE users SET profil = 'high' WHERE username = %s", (username,))
-            mysql.connection.commit()
-            cur.close()
             
 
         
@@ -181,36 +233,12 @@ def update_profil(username,start,end):
     
 #get the consommation of a user
 def get_consommation(username):
-    users = Table("users","address","name", "email", "username", "password")
+    users = Table("users","profil","address")
     user = users.getone("username", username)
-    address =user.get('address') 
-    consommation = 0.00
-    blockchain = get_blockchain()[0]
-
-    #loop through the blockchain and update balance
-    for block in blockchain.chain:
-        data = block.data.split("-->")
-        if address == data[0]:
-            consommation += float(data[1])
+    address =user.get('address')
+    web3.eth.default_account = address
+    
+    times, amounts = contract.functions.getConsomation(address).call()
         
-    return consommation
+    return times, amounts
 
-#get the blockchain from mysql and convert to Blockchain object with the timelisted information
-def get_blockchain():
-    blockchain = Blockchain()
-    timelist=[]
-    blockchain_sql = Table("blockchain", "number", "hash", "previous", "data", "nonce","timestamp_column")
-    for b in blockchain_sql.getall():
-        blockchain.add(Block(int(b.get('number')), b.get('previous'), b.get('data'), int(b.get('nonce'))))
-        timelist.append(b.get('timestamp_column'))
-    return blockchain,timelist
-
-#update blockchain in mysql table
-def sync_blockchain(blockchain):
-    blockchain_sql = Table("blockchain", "number", "hash", "previous", "data", "nonce","timestamp_column")
-    #blockchain_sql.deleteall()
-
-    #for block in blockchain.chain:
-    #    blockchain_sql.insert(str(block.number), block.hash(), block.previous_hash, block.data, block.nonce)
-    block=blockchain.chain[-1]
-    blockchain_sql.insert(str(block.number), block.hash(), block.previous_hash, block.data, block.nonce,datetime.fromtimestamp(time.time()))
