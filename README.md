@@ -1,3 +1,6 @@
+<p align="center">
+  <img src="src_readme/smartmeter.png" alt="Smart Meter Image"/>
+</p>
 
 
 <div align="center">
@@ -75,10 +78,11 @@ Our project integrates advanced algorithms to automatically identify unusual ene
  We optimize energy consumption to support cleaner energy sources and sustainability efforts.
 ## How Predictive AI Models Address the Problem
 #### ARIMA Model:
-The ARIMA model is employed for time-series forecasting. It analyzes historical sales and inventory data to generate predictions for future demand. These predictions guide retailers in making inventory decisions, reducing excess stock, and improving overall efficiency.
+ARIMA, or Autoregressive Integrated Moving Average, is a widely-used time series forecasting method that combines autoregressive and moving average components. It's effective for capturing trends, seasonality, and autocorrelation in data, making it valuable for various forecasting applications.
 
-#### Linear Regression Model:
-Linear regression complements ARIMA by providing additional insights. It helps retailers understand how various factors, such as promotions or marketing campaigns, impact demand. This information aids in fine-tuning inventory strategies.
+
+#### Logistic Regression Model:
+Logistic regression is a statistical model used for binary classification tasks. It calculates the probability of a binary outcome based on a set of independent variables.
 ##### dataset : [ausgrid](https://www.ausgrid.com.au/Industry/Our-Research/Data-to-share/Solar-home-electricity-data) 
 
 
@@ -87,6 +91,19 @@ Linear regression complements ARIMA by providing additional insights. It helps r
 The Smart Meter Project is a web-based platform that empowers organizations and individuals to optimize their energy consumption, track it, detect anomalies (errors), and monitor consumption trends. This platform combines blockchain technology and predictive AI models to address real-world challenges in the field of energy management.
 
 ## Project Structure
+<p align="center">
+  <a href="https://flask.palletsprojects.com/">
+    <img src="src_readme/flask.png" alt="flask" style="margin-right: 20px;" width="200"/>
+  </a>
+  <a href="https://dev.mysql.com/">
+    <img src="src_readme/mysql-2.svg" alt="mysql" style="margin-right: 20px;" width="200"/>
+  </a>
+  <a href="https://soliditylang.org/">
+    <img src="src_readme/solidity.png" alt="solidity" width="200"/>
+  </a>
+</p>
+
+
 
 The project is organized into the following components:
 
@@ -99,7 +116,7 @@ The backend is constructed with Flask, a Python web framework, to facilitate use
 We have incorporated two main  AI models into the project:
 - ARIMA(AutoRegressive Integrated Moving Average): A time series forecasting method combining autoregressive and moving average components.
     
--  LR(Linear Regression): A statistical technique for modeling relationships between variables.
+-  LR(Logistic Regression): A statistical technique for modeling relationships between variables.
 ### Smart Contract:
  The Solidity-coded smart contract manages secure data transactions and anomaly detection within the system.
 
@@ -113,13 +130,13 @@ To run the smart meter Project locally, follow these steps:
 #### Clone the repository 
 
 ```bash
-  git clone https://github.com/youssefboutaleb/A2SV_RetailAI.git
+  git clone https://github.com/youssefboutaleb/Smart-meter-web3.git
 ```
 
 #### Go to the project directory
 
 ```bash
-  cd A2SV_RetailAI
+  cd Smart-meter-web3
 ```
 
 #### Set up a virtual environment and install the required Python packages 
