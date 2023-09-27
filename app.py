@@ -1,6 +1,5 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
 # import flask dependencies for web GUI
 import os
 from flask import Flask, render_template, flash, redirect, url_for, session, request, logging ,jsonify
@@ -38,7 +37,8 @@ app.config['MYSQL_UNIX_SOCKET'] = '/var/run/mysqld/mysqld.sock'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
 #Configure web3 provider
-web3_provider = Web3.HTTPProvider('HTTP://127.0.0.1:7545')
+
+web3_provider = Web3.HTTPProvider("HTTP://127.0.0.1:7545") #local : HTTP://127.0.0.1:7545
 web3 = Web3(web3_provider)
 
 
@@ -162,8 +162,8 @@ def transact():
     users = Table("users","address","name", "email", "username", "password")
     username=session.get('username')
     user = users.getone("username", username)
-        
-    address =user.get('address') 
+
+    address =user.get('address')
     balance = sum(get_consommation(username)[1])
 
     if request.method == 'POST':
