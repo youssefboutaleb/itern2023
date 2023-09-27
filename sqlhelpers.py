@@ -11,7 +11,7 @@ from datetime import datetime
 
 web3_provider = Web3.HTTPProvider('HTTP://127.0.0.1:7545')
 web3 = Web3(web3_provider)
-contract_address = web3.to_checksum_address("0x21438DA416E0bE889DB8E8d22EF28134c54fC4e6")
+contract_address = web3.to_checksum_address("0x3223B1B17eD2155422cb81e191325d083DDbCbe4")
 
 abi = json.loads('[{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"uint256","name":"","type":"uint256"}],"name":"consomations","outputs":[{"internalType":"uint256","name":"time","type":"uint256"},{"internalType":"uint256","name":"amount","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"}],"name":"getConsomation","outputs":[{"internalType":"uint256[]","name":"","type":"uint256[]"},{"internalType":"uint256[]","name":"","type":"uint256[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"userAddress","type":"address"}],"name":"getProfile","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"sendConsomation","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256[]","name":"times","type":"uint256[]"},{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"name":"sendConsomation_csv","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"userAddress","type":"address"},{"internalType":"string","name":"newProfile","type":"string"}],"name":"updateProfile","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"users","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"}]')
 contract = web3.eth.contract(address=contract_address, abi=abi)
@@ -169,7 +169,7 @@ def anomaly_detection(address):
     #standard seuil is seuil=50
 
     l = []
-    model = joblib.load('/home/youssef/Desktop/stage_ete/cryptocurrencypython/model/logistic_regression_model.pkl')
+    model = joblib.load('model/logistic_regression_model.pkl')
     for time,amount in zip(times,amounts):
         # Convert timestamp to a datetime object
         dt_object = datetime.fromtimestamp(time)

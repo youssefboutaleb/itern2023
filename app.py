@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-#import flask dependencies for web GUI
+# import flask dependencies for web GUI
 import os
 from flask import Flask, render_template, flash, redirect, url_for, session, request, logging ,jsonify
 from passlib.hash import sha256_crypt
@@ -32,7 +32,7 @@ app = Flask(__name__, template_folder='templates')
 #configure mysql
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = '123'
+app.config['MYSQL_PASSWORD'] = 'google178'
 app.config['MYSQL_DB'] = 'crypto'
 app.config['MYSQL_UNIX_SOCKET'] = '/var/run/mysqld/mysqld.sock'  
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
@@ -212,10 +212,11 @@ def MultipleTransact():
 
 
 # New route to handle file upload and perform transactions
+
+
 @app.route("/Transact_CSV", methods=['GET', 'POST'])
-@is_logged_in
 def transact_csv():
-    print("Transact_CSV route called.")
+    print("hello")
     form = TransactcsvForm(request.form)
     users = Table("users", "address", "name", "email", "username", "password")
     username = session.get('username')
@@ -224,26 +225,22 @@ def transact_csv():
     address = user.get('address')
     balance = sum(get_consommation(username)[1])
 
-    if request.method == 'POST' and form.validate():
-        csv_file = request.files['csv_file']  # Access the uploaded file from request.files
-        print("Received CSV file:", csv_file.filename)
+    if request.method == 'POST' :
+        csv_file = request.files['csv_file']
+        print("enter")
 
-        # Read CSV data and perform transactions
-        try:
-            times = []
-            amounts = []
+        times = []
+        amounts = []
 
-            # Assuming the CSV file has columns 'times' and 'amounts'
-            with open(csv_file, 'r') as file:
-                csv_reader = csv.DictReader(file)
-                for row in csv_reader:
-                    times.append(int(row['times']))
-                    amounts.append(int(row['amounts']))
+        with csv_file.stream as file_stream:
+            csv_reader = csv.DictReader(file_stream.read().decode('utf-8').splitlines())
 
-            send_amounts_contract(address, times, amounts)
-            flash("Transactions Successful!", "success")
-        except Exception as e:
-            flash("Error reading CSV file or performing transactions: " + str(e), 'danger')
+            for row in csv_reader:
+                times.append(int(row['times']))
+                amounts.append(int(row['amounts']))
+        print(times,amounts)
+        send_amounts_contract(address, times, amounts)
+        flash("Transactions Successful!", "success")
 
         return redirect(url_for('dashboard'))
 
@@ -336,4 +333,7 @@ def index():
 #Run app
 if __name__ == '__main__':
     app.secret_key = 'secret123'
+    app.debug = True
     app.run()
+
+
