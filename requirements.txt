@@ -3,3 +3,4 @@ passlib==1.7.4
 Flask-MySQLdb==0.2.0
 web3==5.23.0
 eth-utils==2.2.0
+eth-abi>=5.0.1 # not directly required, pinned by Snyk to avoid a vulnerability
