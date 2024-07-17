@@ -3,3 +3,11 @@ passlib==1.7.4
 Flask-MySQLdb==0.2.0
 web3==5.23.0
 eth-utils==2.2.0
+aiohttp>=3.9.4 # not directly required, pinned by Snyk to avoid a vulnerability
+eth-abi>=5.0.1 # not directly required, pinned by Snyk to avoid a vulnerability
+eth-keyfile>=0.6.0 # not directly required, pinned by Snyk to avoid a vulnerability
+requests>=2.32.2 # not directly required, pinned by Snyk to avoid a vulnerability
+setuptools>=70.0.0 # not directly required, pinned by Snyk to avoid a vulnerability
+urllib3>=2.2.2 # not directly required, pinned by Snyk to avoid a vulnerability
+websockets>=10.0 # not directly required, pinned by Snyk to avoid a vulnerability
+zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
